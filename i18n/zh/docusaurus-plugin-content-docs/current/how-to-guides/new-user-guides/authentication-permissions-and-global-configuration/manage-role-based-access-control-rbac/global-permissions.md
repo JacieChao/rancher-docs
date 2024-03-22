@@ -1,247 +1,364 @@
 ---
-title: 全局权限
+title: Global Permissions
 ---
 
-_权限_ 是你在为用户选择自定义权限时可以分配的个人访问权限。
+<head> 
+  <link rel="canonical" href="https://ranchermanager.docs.rancher.com/how-to-guides/new-user-guides/authentication-permissions-and-global-configuration/manage-role-based-access-control-rbac/global-permissions"/>
+</head>
 
-全局权限定义用户在任何特定集群之外的授权。Rancher 提供四种开箱即用的默认全局权限：`Administrator` (管理员)、`Restricted Admin` (受限管理员)、`Standard User` (标准用户) 和 `User-Base` 用户。
+_Permissions_ are individual access rights that you can assign when selecting a custom permission for a user.
 
-- **管理员**：可以完全控制整个 Rancher 系统和其中的所有集群。
+Global Permissions define user authorization outside the scope of any particular cluster. Out-of-the-box, there are four default global permissions: `Administrator`, `Restricted Admin`,`Standard User` and `User-base`.
 
-- **受限管理员**：可以完全控制下游集群，但不能更改本地 Kubernetes 集群。
+- **Administrator:** These users have full control over the entire Rancher system and all clusters within it.
 
-- **普通用户**：可以创建新集群并使用它们。普通用户还可以在自己的集群中向其他用户分配集群权限。
+- **Restricted Admin (Deprecated) :** These users have full control over downstream clusters, but cannot alter the local Kubernetes cluster.
 
-- **User-Base 用户**：只有登录权限。
+- **Standard User:** These users can create new clusters and use them. Standard users can also assign other users permissions to their clusters.
 
-你无法更新或删除内置的全局权限。
+- **User-Base:** User-Base users have login-access only.
 
-## 受限管理员
+You cannot update or delete the built-in Global Permissions.
 
-Rancher 2.5 创建了一个新的 `restricted-admin` 角色，以防止本地 Rancher Server Kubernetes 集群的权限提升。此角色对 Rancher 管理的所有下游集群具有完全管理员权限，但没有更改本地 Kubernetes 集群的权限。
+## Global Permission Assignment
 
-`restricted-admin` 可以创建其他具有同样访问权限的 `restricted-admin` 用户。
+Global permissions for local users are assigned differently than users who log in to Rancher using external authentication.
 
-Rancher 还增加了一个新设置，来将初始启动的管理员设置为 `restricted-admin` 角色。该设置适用于 Rancher Server 首次启动时创建的第一个用户。如果设置了这个环境变量，则不会创建全局管理员，也就无法通过 Rancher 创建全局管理员。
+### Global Permissions for New Local Users
 
-要以 `restricted-admin` 作为初始用户来启动 Rancher，你需要使用以下环境变量来启动 Rancher Server：
+When you create a new local user, you assign them a global permission as you complete the **Add User** form.
+
+To see the default permissions for new users,
+
+1. In the upper left corner, click **☰ > Users & Authentication**.
+1. In the left navigation bar, click **Role Templates**.
+1. The **Role Templates** page has tabs for roles grouped by scope. Each table lists the roles in that scope. In the **Global** tab, in the **New User Default** column, the permissions given to new users by default are indicated with a checkmark.
+
+You can [change the default global permissions to meet your needs.](#configuring-default-global-permissions)
+
+### Global Permissions for Users with External Authentication
+
+When a user logs into Rancher using an external authentication provider for the first time, they are automatically assigned the  **New User Default** global permissions. By default, Rancher assigns the **Standard User** permission for new users.
+
+To see the default permissions for new users,
+
+1. In the upper left corner, click **☰ > Users & Authentication**.
+1. In the left navigation bar, click **Role Templates**.
+1. The **Role Templates** page has tabs for roles grouped by scope. Each table lists the roles in that scope. In the **New User Default** column on each page, the permissions given to new users by default are indicated with a checkmark.
+
+You can [change the default permissions to meet your needs.](#configuring-default-global-permissions)
+
+Permissions can be [assigned](#configuring-global-permissions-for-individual-users) to an individual user.
+
+You can [assign a role to everyone in the group at the same time](#configuring-global-permissions-for-groups) if the external authentication provider supports groups.
+
+## Custom Global Permissions
+
+Using custom permissions is convenient for providing users with narrow or specialized access to Rancher.
+
+When a user from an [external authentication source](../authentication-config/authentication-config.md) signs into Rancher for the first time, they're automatically assigned a set of global permissions (hereafter, permissions). By default, after a user logs in for the first time, they are created as a user and assigned the default `user` permission. The standard `user` permission allows users to login and create clusters.
+
+However, in some organizations, these permissions may extend too much access. Rather than assigning users the default global permissions of `Administrator` or `Standard User`, you can assign them a more restrictive set of custom global permissions.
+
+The default roles, Administrator and Standard User, each come with multiple global permissions built into them. The Administrator role includes all global permissions, while the default user role includes three global permissions: Create Clusters, Use Catalog Templates, and User Base, which is equivalent to the minimum permission to log in to Rancher. In other words, the custom global permissions are modularized so that if you want to change the default user role permissions, you can choose which subset of global permissions are included in the new default user role.
+
+Administrators can enforce custom global permissions in multiple ways:
+
+- [Creating custom global roles](#custom-globalroles).
+- [Changing the default permissions for new users](#configuring-default-global-permissions).
+- [Configuring global permissions for individual users](#configuring-global-permissions-for-individual-users).
+- [Configuring global permissions for groups](#configuring-global-permissions-for-groups).
+
+### Combining Built-in GlobalRoles
+
+Rancher provides several GlobalRoles which grant granular permissions for certain common use cases.
+The following table lists each built-in global permission and whether it is included in the default global permissions, `Administrator`, `Standard User` and `User-Base`.
+
+| Custom Global Permission           | Administrator | Standard User | User-Base |
+| ---------------------------------- | ------------- | ------------- |-----------|
+| Create Clusters                    | ✓             | ✓             |           |
+| Create RKE Templates               | ✓             | ✓             |           |
+| Manage Authentication              | ✓             |               |           |
+| Manage Catalogs                    | ✓             |               |           |
+| Manage Cluster Drivers             | ✓             |               |           |
+| Manage Node Drivers                | ✓             |               |           |
+| Manage PodSecurityPolicy Templates | ✓             |               |           |
+| Manage Roles                       | ✓             |               |           |
+| Manage Settings                    | ✓             |               |           |
+| Manage Users                       | ✓             |               |           |
+| Use Catalog Templates              | ✓             | ✓             |           |
+| User-Base (Basic log-in access)  | ✓             | ✓             |           |
+
+For details on which Kubernetes resources correspond to each global permission,
+
+1. In the upper left corner, click **☰ > Users & Authentication**.
+1. In the left navigation bar, click **Role Templates**.
+1.  If you click the name of an individual role, a table shows all of the operations and resources that are permitted by the role.
+
+:::note Notes:
+
+- Each permission listed above is comprised of multiple individual permissions not listed in the Rancher UI. For a full list of these permissions and the rules they are comprised of, access through the API at `/v3/globalRoles`.
+- When viewing the resources associated with default roles created by Rancher, if there are multiple Kubernetes API resources on one line item, the resource will have `(Custom)` appended to it. These are not custom resources but just an indication that there are multiple Kubernetes API resources as one resource.
+
+:::
+
+### Custom GlobalRoles
+
+You can create custom GlobalRoles to satisfy use cases not directly addressed by built-in GlobalRoles. 
+
+Create custom GlobalRoles through the UI or through automation (such as the Rancher Kubernetes API). You can specify the same type of rules as the rules for upstream roles and clusterRoles. 
+
+#### Escalate and Bind verbs
+
+When giving permissions on GlobalRoles, keep in mind that Rancher respects the `escalate` and `bind` verbs, in a similar fashion to [Kubernetes](https://kubernetes.io/docs/reference/access-authn-authz/rbac/#restrictions-on-role-creation-or-update).
+
+Both of these verbs, which are given on the GlobalRoles resource, can grant users the permission to bypass Rancher's privilege escalation checks. This potentially allows users to become admins. Since this represents a serious security risk, `bind` and `escalate` should be distributed to users with great caution. 
+
+The `escalate` verb allows users to change a GlobalRole and add any permission, even if the users doesn't have the permissions in the current GlobalRole or the new version of the GlobalRole. 
+
+The `bind` verb allows users to create a GlobalRoleBinding to the specified GlobalRole, even if they do not have the permissions in the GlobalRole. 
+
+:::danger
+
+The wildcard verb `*` also includes the `bind` and `escalate` verbs. This means that giving `*` on GlobalRoles to a user also gives them both `escalate` and `bind`.
+
+:::
+
+##### Custom GlobalRole Examples
+
+To grant permission to escalate only the `test-gr` GlobalRole:
+
+```yaml
+rules:
+- apiGroups:
+  - 'management.cattle.io'
+  resources:
+  - 'globalroles'
+  resourceNames:
+  - 'test-gr'
+  verbs:
+  - 'escalate'
+```
+
+To grant permission to escalate all GlobalRoles:
+
+```yaml
+rules:
+- apiGroups:
+  - 'management.cattle.io'
+  resources:
+  - 'globalroles'
+  verbs:
+  - 'escalate'
+```
+
+To grant permission to create bindings (which bypass escalation checks) to only the `test-gr` GlobalRole:
+
+```yaml
+rules:
+- apiGroups:
+  - 'management.cattle.io'
+  resources:
+  - 'globalroles'
+  resourceNames:
+  - 'test-gr'
+  verbs:
+  - 'bind'
+- apiGroups:
+  - 'management.cattle.io'
+  resources:
+  - 'globalrolebindings'
+  verbs:
+  - 'create'
+```
+
+Granting `*` permissions (which includes both `escalate` and `bind`):
+
+```yaml
+rules:
+- apiGroups:
+  - 'management.cattle.io'
+  resources:
+  - 'globalroles'
+  verbs:
+  - '*'
+```
+
+#### GlobalRole Permissions on Downstream Clusters
+
+GlobalRoles can grant one or more RoleTemplates on every downstream cluster through the `inheritedClusterRoles` field. Values in this field must refer to a RoleTemplate which exists and has a `context` of Cluster.
+
+With this field, users gain the specified permissions on all current or future downstream clusters. For example, consider the following GlobalRole:
+
+```yaml
+apiVersion: management.cattle.io/v3
+kind: GlobalRole
+displayName: All Downstream Owner 
+metadata:
+  name: all-downstream-owner
+inheritedClusterRoles:
+- cluster-owner
+```
+
+Any user with this permission will be a cluster-owner on all downstream clusters. If a new cluster is added, regardless of type, the user will be an owner on that cluster as well.
+
+:::danger
+
+Using this field on [default GlobalRoles](#configuring-default-global-permissions) may result in users gaining excessive permissions.
+
+:::
+
+### Configuring Default Global Permissions
+
+If you want to restrict the default permissions for new users, you can remove the `user` permission as default role and then assign multiple individual permissions as default instead. Conversely, you can also add administrative permissions on top of a set of other standard permissions.
+
+:::note
+
+Default roles are only assigned to users added from an external authentication provider. For local users, you must explicitly assign global permissions when adding a user to Rancher. You can customize these global permissions when adding the user.
+
+:::
+
+To change the default global permissions that are assigned to external users upon their first log in, follow these steps:
+
+1. In the upper left corner, click **☰ > Users & Authentication**.
+1. In the left navigation bar, click **Role Templates**. On the **Role Templates** page, make sure the **Global** tab is selected.
+1. Find the permissions set that you want to add or remove as a default. Then edit the permission by selecting **⋮ > Edit Config**.
+1. If you want to add the permission as a default, Select **Yes: Default role for new users** and then click **Save**. If you want to remove a default permission, edit the permission and select **No**.
+
+**Result:** The default global permissions are configured based on your changes. Permissions assigned to new users display a check in the **New User Default** column.
+
+### Configuring Global Permissions for Individual Users
+
+To configure permission for a user,
+
+1. In the upper left corner, click **☰ > Users & Authentication**.
+1. In the left navigation bar, click **Users**.
+1. Go to the user whose access level you want to change and click **⋮ > Edit Config**.
+1. In the **Global Permissions** and **Built-in** sections, check the boxes for each permission you want the user to have. If you have created roles from the **Role Templates** page, they will appear in the **Custom** section and you can choose from them as well.
+1. Click **Save**.
+
+**Result:** The user's global permissions have been updated.
+
+### Configuring Global Permissions for Groups
+
+If you have a group of individuals that need the same level of access in Rancher, it can save time to assign permissions to the entire group at once, so that the users in the group have the appropriate level of access the first time they sign into Rancher.
+
+After you assign a custom global role to a group, the custom global role will be assigned to a user in the group when they log in to Rancher.
+
+For existing users, the new permissions will take effect when the users log out of Rancher and back in again, or when an administrator [refreshes the group memberships.](#refreshing-group-memberships)
+
+For new users, the new permissions take effect when the users log in to Rancher for the first time. New users from this group will receive the permissions from the custom global role in addition to the **New User Default** global permissions. By default, the **New User Default** permissions are equivalent to the **Standard User** global role, but the default permissions can be [configured.](#configuring-default-global-permissions)
+
+If a user is removed from the external authentication provider group, they would lose their permissions from the custom global role that was assigned to the group. They would continue to have any remaining roles that were assigned to them, which would typically include the roles marked as **New User Default**. Rancher will remove the permissions that are associated with the group when the user logs out, or when an administrator [refreshes group memberships,](#refreshing-group-memberships) whichever comes first.
+
+:::note Prerequisites:
+
+You can only assign a global role to a group if:
+
+* You have set up an [external authentication provider](../authentication-config/authentication-config.md#external-vs-local-authentication)
+* The external authentication provider supports [user groups](../authentication-config/manage-users-and-groups.md)
+* You have already set up at least one user group with the authentication provider
+
+:::
+
+To assign a custom global role to a group, follow these steps:
+
+1. In the upper left corner, click **☰ > Users & Authentication**.
+1. In the left navigation bar, click **Groups**.
+1. Go to the group you want to assign a custom global role to and click **⋮ > Edit Config**.
+1. In the **Global Permissions,** **Custom,** and/or **Built-in** sections, select the permissions that the group should have.
+1. Click **Create**.
+
+**Result:** The custom global role will take effect when the users in the group log into Rancher.
+
+### Refreshing Group Memberships
+
+When an administrator updates the global permissions for a group, the changes take effect for individual group members after they log out of Rancher and log in again.
+
+To make the changes take effect immediately, an administrator or cluster owner can refresh group memberships.
+
+An administrator might also want to refresh group memberships if a user is removed from a group in the external authentication service. In that case, the refresh makes Rancher aware that the user was removed from the group.
+
+To refresh group memberships,
+
+1. In the upper left corner, click **☰ > Users & Authentication**.
+1. In the left navigation bar, click **Users**.
+1. Click **Refresh Group Memberships**.
+
+**Result:** Any changes to the group members' permissions will take effect.
+
+## Restricted Admin
+
+:::warning Deprecated
+
+The Restricted Admin role is deprecated, and will be removed in a future version of Rancher (2.10 or higher). You should make a custom role with the desired permissions instead of relying on this built-in role.
+
+:::
+
+A new `restricted-admin` role was created in Rancher v2.5 in order to prevent privilege escalation on the local Rancher server Kubernetes cluster. This role has full administrator access to all downstream clusters managed by Rancher, but it does not have permission to alter the local Kubernetes cluster.
+
+The `restricted-admin` can create other `restricted-admin` users with an equal level of access.
+
+A new setting was added to Rancher to set the initial bootstrapped administrator to have the `restricted-admin` role. This applies to the first user created when the Rancher server is started for the first time. If the environment variable is set, then no global administrator would be created, and it would be impossible to create the global administrator through Rancher.
+
+To bootstrap Rancher with the `restricted-admin` as the initial user, the Rancher server should be started with the following environment variable:
 
 ```
 CATTLE_RESTRICTED_DEFAULT_ADMIN=true
 ```
-### `restricted-admin` 的权限列表
+### List of `restricted-admin` Permissions
 
-下表列出了 `restricted-admin` 与 `Administrator` 和 `Standard User` 角色相比应具有的权限和操作：
+The following table lists the permissions and actions that a `restricted-admin` should have in comparison with the `Administrator` and `Standard User` roles:
 
-| 类别 | 操作 | 全局管理员 | 普通用户 | 受限管理员 | 受限管理员的注意事项 |
+| Category | Action | Global Admin | Standard User | Restricted Admin | Notes for Restricted Admin role |
 | -------- | ------ | ------------ | ------------- | ---------------- | ------------------------------- |
-| 本地集群功能 | 管理本地集群（列出、编辑、导入主机） | 是 | 否 | 否 | |
-| | 创建项目/命名空间 | 是 | 否 | 否 | |
-| | 添加集群/项目成员 | 是 | 否 | 否 | |
-| | 全局 DNS | 是 | 否 | 否 | |
-| | 访问 CRD 和 CR 的管理集群 | 是 | 否 | 是 | |
-| | 另存为 RKE 模板 | 是 | 否 | 否 | |
-| 安全 | | | | | |
-| 启用身份验证 | 配置身份验证 | 是 | 否 | 是 | |
-| 角色 | 创建/分配 GlobalRoles | 是 | 否（可列出） | 是 | 认证 Webhook 允许为已经存在的权限创建 globalrole |
-| | 创建/分配 ClusterRoles | 是 | 否（可列出） | 是 | 不在本地集群中 |
-| | 创建/分配 ProjectRoles | 是 | 否（可列出） | 是 | 不在本地集群中 |
-| 用户 | 添加用户/编辑/删除/停用用户 | 是 | 否 | 是 | |
-| 组 | 将全局角色分配给组 | 是 | 否 | 是 | 在 Webhook 允许的范围内 |
-| | 刷新组 | 是 | 否 | 是 | |
-| PSP | 管理 PSP 模板 | 是 | 否（可列出） | 是 | 与 PSP 的全局管理员权限相同 |
-| 工具 | | | | | |
-| | 管理 RKE 模板 | 是 | 否 | 是 | |
-| | 管理全局应用商店 | 是 | 否 | 是 | 无法编辑/删除内置系统应用商店。可以管理 Helm 库 |
-| | 集群驱动 | 是 | 否 | 是 | |
-| | 主机驱动 | 是 | 否 | 是 | |
-| | GlobalDNS 提供商 | 是 | 是（自己） | 是 | |
-| | GlobalDNS 条目 | 是 | 是（自己） | 是 | |
-| 设置 | | | | | |
-| | 管理设置 | 是 | 否（可列出） | 否（可列出） | |
-| 用户 | | | | | |
-| | 管理 API 密钥 | 是（管理所有） | 是（管理自己的） | 是（管理自己的） | |
-| | 管理节点模板 | 是 | 是（管理自己的） | 是（管理自己的） | 只能管理自己的节点模板，不能管理其他用户创建的节点模板。 |
-| | 管理云凭证 | 是 | 是（管理自己的） | 是（管理自己的） | 只能管理自己的云凭证，不能管理其他用户创建的云凭证。 |
-| 下游集群 | 创建集群 | 是 | 是 | 是 | |
-| | 编辑集群 | 是 | 是 | 是 | |
-| | 轮换证书 | 是 | | 是 | |
-| | 立即创建快照 | 是 | | 是 | |
-| | 恢复快照 | 是 | | 是 | |
-| | 另存为 RKE 模板 | 是 | 否 | 是 | |
-| | 运行 CIS 扫描 | 是 | 是 | 是 | |
-| | 添加成员 | 是 | 是 | 是 | |
-| | 创建项目 | 是 | 是 | 是 | |
-| 自 2.5 起的功能 Chart | | | | | |
-| | 安装 Fleet | 是 | | 是 | 无法在本地集群中运行 Fleet |
-| | 部署 EKS 集群 | 是 | 是 | 是 | |
-| | 部署 GKE 集群 | 是 | 是 | 是 | |
-| | 部署 AKS 集群 | 是 | 是 | 是 | |
-
-
-### 将全局管理员更改为受限管理员
-
-如果 Rancher 已经有一个全局管理员，则应该将所有全局管理员更改为新的 `restricted-admin`。
-
-你可以前往**安全 > 用户**，并将所有管理员角色转为受限管理员。
-
-已登录的用户可以根据需要将自己更改为 `restricted-admin`，但这应该是他们的最后一步操作，否则他们将没有进行该操作的权限。
-
-## 分配全局权限
-
-本地用户的全局权限分配与使用外部身份验证登录 Rancher 的用户不同。
-
-### 新本地用户的全局权限
-
-在创建新本地用户时，请在填写**添加用户**表单时为他分配全局权限。
-
-如果需要查看新用户的默认权限：
-
-1. 在左上角，单击 **☰ > 用户 & 认证**。
-1. 在左侧导航栏中，单击**角色**。
-1. **角色**页面有按范围分组的角色选项卡。每个表都列出了范围内的角色。在**全局**选项卡的**新用户的默认角色**列中，默认授予新用户的权限用复选标记表示。
-
-你可以[更改默认全局权限来满足你的需要](#配置默认全局权限)。
-
-### 使用外部身份验证程序的用户的全局权限
-
-当用户首次使用外部身份验证提供程序登录 Rancher 时，他们会自动分配到**新用户的默认角色**的全局权限。默认情况下，Rancher 为新用户分配 **Standard User** 权限。
-
-如果需要查看新用户的默认权限：
-
-1. 在左上角，单击 **☰ > 用户 & 认证**。
-1. 在左侧导航栏中，单击**角色**。
-1. **角色**页面有按范围分组的角色选项卡。每个表都列出了范围内的角色。在每个页面的**新用户的默认角色**列中，默认授予新用户的权限用复选标记表示。
-
-你可以[更改默认权限来满足你的需要](#配置默认全局权限)。
-
-权限可以[分配](#为单个用户配置全局权限)给单个用户。
-
-如果外部身份验证提供程序支持组，你可以[同时为组中的每个成员分配角色](#为组配置全局权限)。
-
-## 自定义全局权限
-
-使用自定义权限可以为用户配置在 Rancher 中的更受限或指定的访问权限。
-
-当来自[外部身份验证系统](../../../../pages-for-subheaders/authentication-config.md)的用户首次登录 Rancher 时，他们会自动分配到一组全局权限（以下简称权限）。默认情况下，用户第一次登录后会被创建为用户，并分配到默认的`用户`权限。标准的`用户`权限允许用户登录和创建集群。
-
-但是，在某些组织中，这些权限可能会被认为权限过大。你可以为用户分配一组更具限制性的自定义全局权限，而不是为用户分配 `Administrator` 或 `Standard User` 的默认全局权限。
-
-默认角色（管理员和标准用户）都内置了多个全局权限。系统管理员角色包括所有全局权限，而默认用户角色包括三个全局权限，分别是创建集群，使用应用商店模板，和 User Base（登录 Rancher 的最低权限）。换句话说，自定义全局权限是模块化的，因此，如果你要更改默认用户角色权限，你可以选择需要包括在新的默认用户角色中的全局权限子集。
-
-管理员可以通过多种方式强制执行自定义全局权限：
-
-- [更改新用户的默认权限](#配置默认全局权限)
-- [为单个用户配置全局权限](#为单个用户配置全局权限)
-- [为组配置全局权限](#为组配置全局权限)
-
-### 自定义全局权限参考
-
-下表列出了每个可用的自定义全局权限，以及该权限是否包含在默认全局权限 `Administrator`、`Standard User` 和 `User-Base` 中：
-
-| 自定义全局权限 | 管理员 | 普通用户 | User-Base |
-| ---------------------------------- | ------------- | ------------- |-----------|
-| 创建集群 | ✓ | ✓ |           |
-| 创建 RKE 模板 | ✓ | ✓ |           |
-| 管理身份验证 | ✓ |               |           |
-| 管理应用商店 | ✓ |               |           |
-| 管理集群驱动 | ✓ |               |           |
-| 管理主机驱动 | ✓ |               |           |
-| 管理 PodSecurityPolicy 模板 | ✓ |               |           |
-| 管理角色 | ✓ |               |           |
-| 管理设置 | ✓ |               |           |
-| 管理用户 | ✓ |               |           |
-| 使用应用商店模板 | ✓ | ✓ |           |
-| User-Base（基本登录访问） | ✓ | ✓ |           |
-
-如果需要查看每个全局权限对应哪些 Kubernetes 资源：
-
-1. 在左上角，单击 **☰ > 用户 & 认证**。
-1. 在左侧导航栏中，单击**角色**。
-1. 如果单击单个角色的名称，表格会显示该角色授权的所有操作和资源。
-
-:::note 注意事项：
-
-- 上面列出的每个权限都包含多个未在 Rancher UI 中列出的权限。如果需要获取完整权限列表以及组成权限的规则，请通过 `/v3/globalRoles` API 进行访问。
-- 在查看 Rancher 创建的默认角色关联的资源时，如果在一行上有多个 Kubernetes API 资源，则该资源将带有 `(Custom)` 标识。这不代表这个资源是自定义资源，而只是表明多个 Kubernetes API 资源作为一个资源。
-
-:::
-
-### 配置默认全局权限
-
-如果你想限制新用户的默认权限，你可以删除作为默认角色的`用户`权限，然后分配多个单独的权限作为默认权限。你也可以在一组其他标准权限之上添加管理权限。
-
-:::note
-
-默认角色仅分配给从外部身份验证提供程序添加的用户。对于本地用户，在将用户添加到 Rancher 时，必须显式分配全局权限。你可以在添加用户时自定义这些全局权限。
-
-:::
-
-要更改在外部用户首次登录时分配给他们的默认全局权限，请执行以下步骤：
-
-1. 在左上角，单击 **☰ > 用户 & 认证**。
-1. 在左侧导航栏中，单击**角色**。在**角色**页面上，确保选择了**全局**选项卡。
-1. 查找要添加或删除的默认权限集。然后，通过选择 **⋮ > 编辑配置**来编辑权限。
-1. 如果要将权限添加为默认权限，请选择**是：新用户的默认角色**，然后单击**保存**。如果要删除默认权限，请编辑该权限并选择**否**。
-
-**结果**：默认全局权限已根据你的更改配置。分配给新用户的权限会在**新用户的默认角色**列中显示为复选标记。
-
-### 为单个用户配置全局权限
-
-要为单个用户配置权限：
-
-1. 在左上角，单击 **☰ > 用户 & 认证**。
-1. 在左侧导航栏中，单击**用户**。
-1. 找到要更改访问级别的用户，然后单击 **⋮ > 编辑配置**。
-1. 在**全局权限**和**内置角色**部分中，选中你希望用户拥有的权限的复选框。如果你在**角色**页面创建了角色，这些角色将出现在**自定义**部分，你也可以选择这些角色。
-1. 单击**保存**。
-
-**结果**：用户的全局权限已更新。
-
-### 为组配置全局权限
-
-如果你有一组需要在 Rancher 中有相同访问权限的用户，你可以一次性将权限分配给整个组来节省时间。这样，组中的用户在第一次登录 Rancher 时能拥有相应级别的访问权限。
-
-将自定义全局角色分配给组后，该角色将在组中用户登录 Rancher 时分配给用户。
-
-对于现有用户，新权限将在用户退出 Rancher 并重新登录时，或当管理员[刷新用户组成员名单](#刷新用户组成员名单)时生效。
-
-对于新用户，新权限在用户首次登录 Rancher 时生效。除了**新用户的默认角色**全局权限外，来自该组的新用户还将获得自定义全局角色的权限。默认情况下，**新用户的默认角色**权限等同于 **Standard User** 全局角色，但默认权限可以[配置。](#配置默认全局权限)
-
-如果从外部身份验证提供程序组中删除用户，该用户将失去分配给该组的自定义全局角色的权限。他们将继续拥有分配给他们的所有剩余角色，这通常包括标记为**新用户的默认角色**的角色。Rancher 将在用户登出或管理员[刷新用户组成员名单](#刷新用户组成员名单)时删除与组关联的权限。
-
-:::note 先决条件：
-
-只有在以下情况下，你才能将全局角色分配给组：
-
-* 你已设置[外部身份验证提供程序](../../../../pages-for-subheaders/authentication-config.md#外部验证与本地验证)。
-* 外部身份验证提供程序支持[用户组](../authentication-config/manage-users-and-groups.md)。
-* 你已使用身份验证提供程序设置了至少一个用户组。
-
-:::
-
-要将自定义全局角色分配给组，请执行以下步骤：
-
-1. 在左上角，单击 **☰ > 用户 & 认证**。
-1. 在左侧导航栏中，单击**组**。
-1. 转到你要分配自定义全局角色的组，然后单击 **⋮ > 编辑配置**。
-1. 在**全局权限**，**自定义**和/或**内置角色**部分中，选择该组应具有的权限。
-1. 单击**创建**。
-
-**结果**：自定义全局角色会在组内用户登录 Rancher 时生效。
-
-### 刷新用户组成员名单
-
-当管理员更新组的全局权限时，更改将在组成员退出 Rancher 并重新登录后生效。
-
-如果要让更改立即生效，管理员或集群所有者可以刷新用户组成员名单。
-
-如果用户已经从外部身份验证服务中的组中删除，管理员也可能需要刷新用户组成员名单。在这种情况下，刷新操作会让 Rancher 知道用户已从组中删除。
-
-要刷新用户组成员名单：
-
-1. 在左上角，单击 **☰ > 用户 & 认证**。
-1. 在左侧导航栏中，单击**用户**。
-1. 单击**刷新用户组成员名单**。
-
-**结果**：对组成员权限的所有更改都会生效。
+| Local Cluster functions | Manage Local Cluster (List, Edit, Import Host) | Yes | No | No | |
+| | Create Projects/namespaces | Yes | No | No | |
+| | Add cluster/project members | Yes | No | No | |
+| | Global DNS | Yes | No | No | |
+| | Access to management cluster for CRDs and CRs | Yes | No | Yes | |
+| | Save as RKE Template | Yes | No | No | |
+| Security | | | | | |
+| Enable auth | Configure Authentication | Yes | No | Yes | |
+| Roles	| Create/Assign GlobalRoles | Yes | No (Can list) | Yes | Auth webhook allows creating globalrole for perms already present |
+| | Create/Assign ClusterRoles | Yes | No (Can list) | Yes | Not in local cluster |
+| | Create/Assign ProjectRoles | Yes | No (Can list) | Yes | Not in local cluster |
+| Users	| Add User/Edit/Delete/Deactivate User | Yes | No | Yes | |
+| Groups | Assign Global role to groups | Yes | No | Yes | As allowed by the webhook |
+| | Refresh Groups | Yes | No | Yes | |
+| PSP's | Manage PSP templates | Yes | No (Can list) | Yes | Same privileges as Global Admin for PSPs |
+| Tools | | | | | |
+| | Manage RKE Templates | Yes | No | Yes | |
+| | Manage Global Catalogs | Yes | No | Yes | Cannot edit/delete built-in system catalog. Can manage Helm library |
+| | Cluster Drivers | Yes | No | Yes | |
+| | Node Drivers | Yes | No | Yes | |
+| | GlobalDNS Providers | Yes | Yes (Self) | Yes | |
+| | GlobalDNS Entries | Yes | Yes (Self) | Yes | |
+| Settings | | | | | |
+| | Manage Settings | Yes | No (Can list) | No (Can list) | |
+| User | | | | | |
+| | Manage API Keys | Yes (Manage all) | Yes (Manage self) | Yes (Manage self) | |
+| | Manage Node Templates | Yes | Yes (Manage self) | Yes (Manage self) | Can only manage their own node templates and not those created by other users |
+| | Manage Cloud Credentials | Yes | Yes (Manage self) | Yes (Manage self) | Can only manage their own cloud credentials and not those created by other users |
+| Downstream Cluster | Create Cluster | Yes | Yes | Yes | |
+| | Edit Cluster | Yes | Yes | Yes | |
+| | Rotate Certificates	| Yes | | Yes | |
+| | Snapshot Now | Yes | | Yes | |
+| | Restore Snapshot | Yes | | Yes | |
+| | Save as RKE Template | Yes | No | Yes | |
+| | Run CIS Scan | Yes | Yes | Yes | |
+| | Add Members	| Yes | Yes | Yes | |
+| | Create Projects | Yes | Yes | Yes | |
+| Feature Charts since v2.5 | | | | | |
+| | Install Fleet | Yes | | Yes | Should not be able to run Fleet in local cluster |
+| | Deploy EKS cluster | Yes | Yes | Yes | |
+| | Deploy GKE cluster | Yes | Yes | Yes | |
+| | Deploy AKS cluster | Yes | Yes | Yes | |
+
+### Changing Global Administrators to Restricted Admins
+
+In previous version, the docs recommended that all users should be changed over to Restricted Admin if the role was in use. Users are now encouraged to use a custom-built role using the cluster permissions feature, and migrate any current restricted admins to use that approach. 
+
+This can be done through **Security > Users** and moving any Administrator role over to Restricted Administrator.
+
+Signed-in users can change themselves over to the `restricted-admin` if they wish, but they should only do that as the last step, otherwise they won't have the permissions to do so.
